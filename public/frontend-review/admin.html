@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #101820;
+      color: #f5f5dc;
+      padding: 2rem;
+    }
+    h1 { color: gold; text-align: center; }
+    .review-card {
+      background-color: #222;
+      border: 1px solid #444;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+    }
+    button {
+      background-color: crimson;
+      color: white;
+      border: none;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Panel Admin - Review Film</h1>
+  <div id="reviewList">Memuat review...</div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    async function loadReviews() {
+      const res = await fetch('/api/reviews', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        }
+      });
+      const data = await res.json();
+      const list = document.getElementById('reviewList');
+      list.innerHTML = '';
+      data.forEach(r => {
+        list.innerHTML += `
+          <div class="review-card">
+            <strong>${r.judul}</strong>
+            <p>${r.isi}</p>
+            <p>❤️ ${r.likes || 0} <button onclick="deleteReview(${r.id})">Hapus</button></p>
+          </div>`;
+      });
+    }
+
+    async function deleteReview(id) {
+      if (!confirm("Yakin ingin hapus review ini?")) return;
+      await fetch(`/api/reviews/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        }
+      });
+      loadReviews();
+    }
+
+    loadReviews();
+  </script>
+
+</body>
+</html>

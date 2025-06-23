@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Review Film & Series</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0a0a0a;
+      color: #f5f5dc;
+    }
+
+    header {
+      background-color: #001f3f;
+      color: gold;
+      padding: 1rem 2rem;
+      text-align: center;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      color: gold;
+    }
+
+    form input, form textarea, form button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      border: 1px solid #444;
+      border-radius: 5px;
+      background-color: #111;
+      color: white;
+      font-size: 1rem;
+    }
+
+    button {
+      background-color: #004080;
+      color: gold;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0059b3;
+    }
+
+    .review-card {
+      background-color: #111;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .logout-btn {
+      background-color: #660000;
+      margin-bottom: 2rem;
+    }
+
+    footer {
+      background-color: #001f3f;
+      color: #ccc;
+      text-align: center;
+      padding: 1rem;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 600px) {
+      body, input, textarea, button {
+        font-size: 1rem;
+      }
+
+      main {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Review Film & Series</h1>
+  </header>
+
+  <main>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <h2>Kirim Review</h2>
+    <form id="reviewForm">
+      <input type="text" id="judul" placeholder="Judul Film" required />
+      <textarea id="isi" placeholder="Tulis review kamu di sini..." required></textarea>
+      <button type="submit">Kirim</button>
+    </form>
+
+    <h2>Semua Review</h2>
+    <div id="reviewList"></div>
+  </main>
+
+  <footer>
+    &copy; 2025 Review Film & Series | Powered by Laravel & HTML
+  </footer>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'login.html';
+
+    document.getElementById('reviewForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const judul = document.getElementById('judul').value;
+      const isi = document.getElementById('isi').value;
+
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ judul, isi })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert('Review berhasil dikirim!');
+        document.getElementById('reviewForm').reset();
+        loadReviews();
+      } else {
+        alert('Gagal kirim review: ' + (data.message || 'Terjadi kesalahan'));
+      }
+    });
+
+    async function loadReviews() {
+      const res = await fetch('/api/reviews', {
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        }
+      });
+      const data = await res.json();
+      const list = document.getElementById('reviewList');
+      list.innerHTML = '';
+      data.forEach(r => {
+        list.innerHTML += `
+          <div class="review-card">
+            <strong>${r.judul}</strong>
+            <p>${r.isi}</p>
+            <p>❤️ ${r.likes || 0} <button onclick="likeReview(${r.id})">Like</button></p>
+          </div>`;
+      });
+    }
+
+    function logout() {
+      fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        }
+      }).then(() => {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+      });
+    }
+
+    async function likeReview(id) {
+      const res = await fetch(`/api/reviews/${id}/like`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Accept': 'application/json',
+        }
+      });
+      const data = await res.json();
+      if (res.ok) loadReviews();
+    }
+
+    loadReviews();
+  </script>
+</body>
+</html>
